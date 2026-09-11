@@ -8,8 +8,8 @@ templates = Jinja2Templates(directory="templates")
 
 @router.get("/", response_class=HTMLResponse)
 async def get_game(request: Request):
-    return templates.TemplateResponse(name="map_rasterizer.html", context={"request": request})
-
+    # Pass arguments strictly by position: (request, template_name, context_dict)
+    return templates.TemplateResponse(request, "map_rasterizer.html", {})
 
 
 @router.websocket("/ws")
