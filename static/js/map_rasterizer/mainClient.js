@@ -1,7 +1,7 @@
 import { GameClient } from './gameClient.js';
 
 // Setup Supabase Connection parameters inside the application frontend view space
-const SUPABASE_URL = "https://oztxnrrhbrgzzibfolmc.supabase.co/rest/v1/";
+const SUPABASE_URL = "https://oztxnrrhbrgzzibfolmc.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19yYT7neVpzxoKw_JQ665XFh";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
