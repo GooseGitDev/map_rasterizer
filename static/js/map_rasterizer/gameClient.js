@@ -1,33 +1,29 @@
 export class GameClient {
     constructor(canvas, context) {
-        self.canvas = canvas;
-        self.ctx = context;
-        self.socket = null;
+        this.canvas = canvas;
+        this.ctx = context;
+        this.socket = null;
     }
 
     connect() {
-        // Dynamically choose between ws:// and wss:// based on the deployment environment
         const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const wsUrl = `${protocol}${window.location.host}/ws`;
         
-        console.log(`🔌 Attempting connection to: ${wsUrl}`);
-        self.socket = new WebSocket(wsUrl);
+        this.socket = new WebSocket(wsUrl);
 
-        self.socket.onopen = () => {
-            document.getElementById('status').innerText = "Network Status: Connected!";
-            document.getElementById('status').style.color = "#00ffcc";
-            
-            // Send a handshake test message to the server
-            self.socket.send("Hello Server, from GameClient!");
+        this.socket.onopen = () => {
+            document.getElementById('status').innerText = "Network Engine Status: Secured WebSocket Connected!";
+            // Share the handshake access authorization string token down across the active websocket pipeline
+            this.socket.send(JSON.stringify({ type: "AUTH", token: window.AUTH_TOKEN }));
         };
 
-        self.socket.onmessage = (event) => {
+        this.socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            console.log("🎮 Message received from server:", data);
+            console.log("🎮 Server Package Intercepted:", data);
         };
 
-        self.socket.onclose = () => {
-            document.getElementById('status').innerText = "Network Status: Disconnected.";
+        this.socket.onclose = () => {
+            document.getElementById('status').innerText = "Network Engine Status: Closed Connection Event Pipeline.";
             document.getElementById('status').style.color = "#ff3333";
         };
     }
