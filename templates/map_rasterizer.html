@@ -3,20 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Map Rasterizer</title>
+    <title>Map Rasterizer Engine</title>
+    <!-- Include Supabase script bundle so game engine front-end can process signouts cleanly -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { margin: 0; background: #80768d; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-        canvas { border: 2px solid #444; background: #000; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
-        #status { margin-top: 10px; color: #888; }
+        body { margin: 0; background: #121212; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #1e1e1e; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; }
+        .nav-brand { font-size: 18px; font-weight: bold; color: #00ffcc; }
+        .user-badge { font-size: 14px; background: #2a2a2a; padding: 6px 12px; border-radius: 4px; color: #aaa; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px; }
+        .btn-home { background: #444; color: white; margin-right: 10px; }
+        .btn-logout { background: #ff3333; color: white; }
+        .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        canvas { border: 2px solid #333; background: #35c035; }
+        #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
 <body>
 
-    <h1>Map Rasterizer Base</h1>
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
-    <div id="status">Network Status: Connecting...</div>
+    
+    <header>
+        <div class="nav-brand">Project Module: Rasterizer Engine</div>
+        <div>
+            <span class="user-badge" id="game-user-email">Verifying Session Token...</span>
+            <a href="https://onrender.com" class="btn btn-home">← Return Home Hub</a>
+            <button class="btn btn-logout" id="game-logout-btn">Log Out</button>
+        </div>
+    </header>
 
-    <!-- Essential: type="module" allows us to use import/export statements -->
+    <div class="game-zone">
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div id="status">Network Engine Status: Connecting Socket Interface Pipeline...</div>
+    </div>
+
+    <!-- Embed the secure verified runtime token directly as a global JS parameter variable object -->
+    <script>
+        window.AUTH_TOKEN = "{{ token }}";
+    </script>
     <script type="module" src="/static/js/map_rasterizer/mainClient.js"></script>
 </body>
 </html>
