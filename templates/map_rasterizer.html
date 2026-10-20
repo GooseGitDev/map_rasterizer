@@ -15,7 +15,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #8a57bb; }
+        canvas { border: 2px solid #333; background: #f30000; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -36,6 +36,7 @@
     </div>
 
     <!-- Embed the secure verified runtime token directly as a global JS parameter variable object -->
+    <!-- Update the script block in map_rasterizer.html to this: -->
     <script>
         window.AUTH_TOKEN = "{{ token }}";
 
@@ -54,11 +55,20 @@
         if (currentHost === "localhost" || currentHost === "127.0.0.1") {
             homeBtn.href = "http://127.0.0.1:8080"; // Local Landing Page Portal Port
         } else {
-            homeBtn.href = "https://landing-page-xlpu.onrender.com"; // Production Landing Page
+            homeBtn.href = "https://onrender.com"; // Production Landing Page
         }
 
         // 4. Session Validation and Email Badge Render Execution
         async function verifySession() {
+            // 🟢 THE KEY FIX: If your Python backend passed a token down into the HTML,
+            // explicitly set that session inside this domain's Supabase client memory space!
+            if (window.AUTH_TOKEN && window.AUTH_TOKEN !== "" && window.AUTH_TOKEN !== "{{ token }}") {
+                await supabaseClient.auth.setSession({
+                    access_token: window.AUTH_TOKEN,
+                    refresh_token: "" // Not needed just to run the getUser authentication lookup check
+                });
+            }
+
             const { data: { user }, error } = await supabaseClient.auth.getUser();
 
             if (user && !error) {
@@ -85,6 +95,7 @@
         // Run verification loop on initialization
         verifySession();
     </script>
+
     <script type="module" src="/static/js/map_rasterizer/mainClient.js"></script>
 </body>
 </html>
