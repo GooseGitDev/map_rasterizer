@@ -25,7 +25,6 @@
         <div class="nav-brand">Project: map_rasterizer</div>
         <div>
             <span class="user-badge" id="game-user-email">Verifying Session Token...</span>
-            <!-- id added to home link so javascript can set the url parameter configuration dynamically -->
             <a href="#" id="return-home-btn" class="btn btn-home">← Return Home Hub</a>
             <button class="btn btn-logout" id="game-logout-btn">Log Out</button>
         </div>
@@ -40,15 +39,51 @@
     <script>
         window.AUTH_TOKEN = "{{ token }}";
 
-        // Dynamic Environment Routing Controller Pipeline
-        const currentHost = window.location.hostname;
+        // 1. Initialize your specific secure Supabase Client Instance
+        const SUPABASE_URL = "https://supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19secretpzxoKw_JQ665XFh";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 2. Fetch UI DOM Element Bindings
+        const userBadge = document.getElementById('game-user-email');
+        const gameLogoutBtn = document.getElementById('game-logout-btn');
         const homeBtn = document.getElementById('return-home-btn');
 
+        // 3. Dynamic Environment Routing Controller Pipeline
+        const currentHost = window.location.hostname;
         if (currentHost === "localhost" || currentHost === "127.0.0.1") {
             homeBtn.href = "http://127.0.0.1:8080"; // Local Landing Page Portal Port
         } else {
-            //homeBtn.href = "https://landing-page-goose.onrender.com"; // ⚠️ Replace with your actual live landing page subdomain!
-        }   homeBtn.href = "https://landing-page-xlpu.onrender.com";
+            homeBtn.href = "https://landing-page-xlpu.onrender.com"; // Production Landing Page
+        }
+
+        // 4. Session Validation and Email Badge Render Execution
+        async function verifySession() {
+            const { data: { user }, error } = await supabaseClient.auth.getUser();
+
+            if (user && !error) {
+                // Let the user know they are checked in by printing their email address
+                userBadge.innerText = user.email;
+            } else {
+                // Handle missing or dead session states by bouncing them back to your hub portal
+                userBadge.innerText = "Auth Error: Session Expired";
+                userBadge.style.color = "#ff3333";
+                setTimeout(() => {
+                    window.location.href = homeBtn.href;
+                }, 1500);
+            }
+        }
+
+        // 5. Cross-domain session sign-out event handler sequence
+        gameLogoutBtn.addEventListener('click', async () => {
+            userBadge.innerText = "Signing out...";
+            await supabaseClient.auth.signOut();
+            // Drop them back to the active login panel once authentication tokens are dropped
+            window.location.href = homeBtn.href;
+        });
+
+        // Run verification loop on initialization
+        verifySession();
     </script>
     <script type="module" src="/static/js/map_rasterizer/mainClient.js"></script>
 </body>
