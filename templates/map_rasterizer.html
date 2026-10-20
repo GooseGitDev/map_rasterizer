@@ -15,7 +15,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #1cdd5c; }
+        canvas { border: 2px solid #333; background: #dd731c; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -57,67 +57,43 @@
         if (currentHost === "localhost" || currentHost === "127.0.0.1") {
             homeBtn.href = "http://127.0.0.1:8080"; 
         } else {
-            homeBtn.href = "https://landing-page-xlpu.onrender.com"; 
+            homeBtn.href = "https://onrender.com"; 
         }
 
-        // // Session Validation and Email Badge Render Execution
-        // async function verifySession() {
-        //     try {
-        //         // 🟢 FIX B: Safely confirm that Python actually replaced the placeholder text 
-        //         // with a real, live base64 web token hash before injecting it into memory
-        //         if (window.AUTH_TOKEN && window.AUTH_TOKEN !== "" && !window.AUTH_TOKEN.includes("{")) {
-        //             await supabaseClient.auth.setSession({
-        //                 access_token: window.AUTH_TOKEN,
-        //                 refresh_token: "" 
-        //             });
-        //         }
-
-        //         // Verify session against Supabase
-        //         const { data: { user }, error } = await supabaseClient.auth.getUser();
-
-        //         if (user && !error) {
-        //             // Success! Display verified email address badge context
-        //             userBadge.innerText = user.email;
-        //         } else {
-        //             throw new Error("Invalid or expired session token.");
-        //         }
-        //     } catch (err) {
-        //         // Bounce them back directly to your landing portal hub for re-auth
-        //         userBadge.innerText = "Auth Error: Redirecting...";
-        //         userBadge.style.color = "#ff3333";
-        //         setTimeout(() => {
-        //             window.location.href = homeBtn.href;
-        //         }, 1200);
-        //     }
-        // }
         // Session Validation and Email Badge Render Execution
         async function verifySession() {
             try {
-                // Confirm that Python successfully delivered a web token string
-                if (window.AUTH_TOKEN && window.AUTH_TOKEN !== "" && !window.AUTH_TOKEN.includes("{")) {
+                // 1. Scrape the secure hash fragment values directly out of the active browser bar
+                const hash = window.location.hash;
+                
+                if (hash && hash.includes('access_token')) {
+                    // Extract the base64 auth token string cleanly
+                    const params = new URLSearchParams(hash.replace('#', '?'));
+                    const parsedToken = params.get('access_token');
                     
-                    // 1. Await the session set injection operation
-                    await supabaseClient.auth.setSession({
-                        access_token: window.AUTH_TOKEN,
-                        refresh_token: "" 
-                    });
+                    if (parsedToken) {
+                        // 2. Hydrate the local storage scope environment with your authorization keys
+                        await supabaseClient.auth.setSession({
+                            access_token: parsedToken,
+                            refresh_token: "" 
+                        });
 
-                    // 🟢 THE FINAL CURE: Give the asynchronous storage pipeline a split-second 
-                    // breath (100ms) to settle into memory before asking for user metadata
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                        // Clean up the URL hash immediately for aesthetic polish and security
+                        window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+                    }
                 }
 
-                // 2. Now securely query your verified profile
+                // 3. Verify the final computed state against your Supabase instance
                 const { data: { user }, error } = await supabaseClient.auth.getUser();
 
                 if (user && !error) {
                     // Success! Display verified email address badge context
                     userBadge.innerText = user.email;
                 } else {
-                    throw new Error("Invalid or expired session token.");
+                    throw new Error("Unauthorized or absent session token context.");
                 }
             } catch (err) {
-                // Bounce them back directly to your landing portal hub for re-auth
+                // Security Guard Enforced: Bounce bad traffic out to your portfolio hub portal
                 userBadge.innerText = "Auth Error: Redirecting...";
                 userBadge.style.color = "#ff3333";
                 setTimeout(() => {
@@ -125,8 +101,6 @@
                 }, 1200);
             }
         }
-
-
 
         // Cross-domain session sign-out event handler sequence
         gameLogoutBtn.addEventListener('click', async () => {
