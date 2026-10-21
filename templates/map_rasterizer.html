@@ -15,7 +15,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #abce0e; }
+        canvas { border: 2px solid #333; background: #1c8f55; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -223,32 +223,39 @@
 
         async function verifySession() {
             try {
-                // 1. Strip the leading '#' cleanly using substring instead of a query token replacement
-                const hash = window.location.hash.substring(1);
+                let accessToken = null;
+                let refreshToken = "";
+
+                // 1. Check if the token is passed as a query parameter (?token=...)
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.has('token')) {
+                    accessToken = urlParams.get('token');
+                    refreshToken = urlParams.get('refresh_token') || "";
+                } 
+                // 2. Fallback: Check if it's passed as a hash fragment (#access_token=...)
+                else if (window.location.hash) {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    accessToken = hashParams.get('access_token');
+                    refreshToken = hashParams.get('refresh_token') || "";
+                }
                 
-                if (hash && hash.includes('access_token')) {
-                    // 2. Safely parse the raw key/value parameters natively
-                    const params = new URLSearchParams(hash);
-                    const parsedToken = params.get('access_token');
-                    const parsedRefresh = params.get('refresh_token') || "";
+                // 3. If a token was found in either spot, inject it into the Supabase client
+                if (accessToken) {
+                    const { data, error: setSessionError } = await supabaseClient.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken
+                    });
+
+                    if (setSessionError) throw setSessionError;
+
+                    // Give storage arrays a split second (100ms) to finalize write parameters
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     
-                    if (parsedToken) {
-                        // 🟢 Await the token injection operation securely
-                        const { data, error: setSessionError } = await supabaseClient.auth.setSession({
-                            access_token: parsedToken,
-                            refresh_token: parsedRefresh // Passing the refresh token keeps the webapp session alive long-term
-                        });
-
-                        if (setSessionError) throw setSessionError;
-
-                        // Give storage arrays a split second (100ms) to finalize write parameters
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        
-                        window.history.replaceState(null, null, window.location.origin + window.location.pathname);
-                    }
+                    // Clear out the address bar clean for security and look code polish
+                    window.history.replaceState(null, null, window.location.origin + window.location.pathname);
                 }
 
-                // 3. Query profile metadata properties
+                // 4. Now verify against your Supabase database backend
                 const { data: { user }, error } = await supabaseClient.auth.getUser();
 
                 if (user && !error) {
@@ -258,7 +265,6 @@
                     throw new Error("Absent or invalid token match context.");
                 }
             } catch (err) {
-                // 🟢 Logs the true hidden security block out to your Inspector inspect console
                 console.error("Critical Authentication Pipeline Halt:", err);
                 
                 userBadge.innerText = "Auth Error: Redirecting...";
@@ -268,6 +274,7 @@
                 }, 1500);
             }
         }
+
 
 
 
