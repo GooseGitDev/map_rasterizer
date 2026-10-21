@@ -36,7 +36,7 @@
     </div>
 
     <!-- Embed the secure verified runtime token directly as a global JS parameter variable object -->
-    <script>
+    <!-- <script>
         window.AUTH_TOKEN = "{{ token }}";
 
         // 1. Initialize your specific secure Supabase Client Instance
@@ -84,7 +84,83 @@
 
         // Run verification loop on initialization
         verifySession();
+    </script> -->
+
+    <!-- Overwrite the script area at the base of templates/map_rasterizer.html -->
+    <script>
+        // Initialize secure Supabase Client Instance
+        const SUPABASE_URL = "https://supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19secretpzxoKw_JQ665XFh";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Fetch UI DOM Element Bindings
+        const userBadge = document.getElementById('game-user-email');
+        const gameLogoutBtn = document.getElementById('game-logout-btn');
+        const homeBtn = document.getElementById('return-home-btn');
+
+        // Dynamic Environment Routing Controller Pipeline
+        const currentHost = window.location.hostname;
+        if (currentHost === "localhost" || currentHost === "127.0.0.1") {
+            homeBtn.href = "http://127.0.0.1:8080"; // Your local landing page portal address
+        } else {
+            homeBtn.href = "https://onrender.com"; // Your live production dashboard address
+        }
+
+        // Session Validation and Email Badge Render Execution
+        async function verifySession() {
+            try {
+                // 1. Check if an access token is embedded inside your URL fragment hash
+                const hash = window.location.hash;
+                
+                if (hash && hash.includes('access_token')) {
+                    const params = new URLSearchParams(hash.replace('#', '?'));
+                    const parsedToken = params.get('access_token');
+                    
+                    if (parsedToken) {
+                        // 2. Hydrate your local storage memory layer with your authentication keys
+                        await supabaseClient.auth.setSession({
+                            access_token: parsedToken,
+                            refresh_token: "" 
+                        });
+
+                        // Instantly clear the long token hash string from the address bar for security polish
+                        window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+                    }
+                }
+
+                // 3. Now verify against your Supabase database backend
+                const { data: { user }, error } = await supabaseClient.auth.getUser();
+
+                if (user && !error) {
+                    // Success! Display verified email address badge context
+                    userBadge.innerText = user.email;
+                } else {
+                    throw new Error("Missing or invalid user profile token.");
+                }
+            } catch (err) {
+                // Security Guard Action: Bounce invalid traffic back to your splash portal panel
+                userBadge.innerText = "Auth Error: Redirecting...";
+                userBadge.style.color = "#ff3333";
+                setTimeout(() => {
+                    window.location.href = homeBtn.href;
+                }, 1200);
+            }
+        }
+
+        // Cross-domain session sign-out event handler sequence
+        gameLogoutBtn.addEventListener('click', async () => {
+            userBadge.innerText = "Signing out...";
+            await supabaseClient.auth.signOut();
+            window.location.href = homeBtn.href;
+        });
+
+        // Run verification loop on initialization
+        verifySession();
     </script>
+
+
+
+
     <script type="module" src="/static/js/map_rasterizer/mainClient.js"></script>
 </body>
 </html>
