@@ -15,7 +15,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #1c8f55; }
+        canvas { border: 2px solid #333; background: #ff00bf; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -224,45 +224,51 @@
         async function verifySession() {
             try {
                 let accessToken = null;
-                let refreshToken = "";
 
-                // 1. Check if the token is passed as a query parameter (?token=...)
+                // 1. Snatch the token from whichever method it arrived on
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.has('token')) {
                     accessToken = urlParams.get('token');
-                    refreshToken = urlParams.get('refresh_token') || "";
-                } 
-                // 2. Fallback: Check if it's passed as a hash fragment (#access_token=...)
-                else if (window.location.hash) {
+                } else if (window.location.hash) {
                     const hashParams = new URLSearchParams(window.location.hash.substring(1));
                     accessToken = hashParams.get('access_token');
-                    refreshToken = hashParams.get('refresh_token') || "";
                 }
-                
-                // 3. If a token was found in either spot, inject it into the Supabase client
+
+                let userResponse = null;
+
+                // 2. Validate token directly via getUser if we caught one from the redirect parameter
                 if (accessToken) {
-                    const { data, error: setSessionError } = await supabaseClient.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: refreshToken
-                    });
-
-                    if (setSessionError) throw setSessionError;
-
-                    // Give storage arrays a split second (100ms) to finalize write parameters
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    // We feed the accessToken straight into getUser to authenticate against the server directly
+                    userResponse = await supabaseClient.auth.getUser(accessToken);
                     
-                    // Clear out the address bar clean for security and look code polish
-                    window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+                    if (userResponse.error) {
+                        console.warn("Passed token validation failed:", userResponse.error.message);
+                    } else if (userResponse.data.user) {
+                        // Success! Since the server validated it, we now save the session locally for future page reloads
+                        const parsedRefresh = urlParams.get('refresh_token') || "";
+                        await supabaseClient.auth.setSession({
+                            access_token: accessToken,
+                            refresh_token: parsedRefresh
+                        });
+                    }
                 }
 
-                // 4. Now verify against your Supabase database backend
-                const { data: { user }, error } = await supabaseClient.auth.getUser();
+                // 3. Fallback: If no redirect token was found, check if a local session already exists from a previous load
+                if (!userResponse || !userResponse.data.user) {
+                    userResponse = await supabaseClient.auth.getUser();
+                }
 
-                if (user && !error) {
-                    userBadge.innerText = user.email;
+                // 4. Final verification check execution
+                if (userResponse.data && userResponse.data.user) {
+                    // Success! Display verified email address badge context
+                    userBadge.innerText = userResponse.data.user.email;
+                    
+                    // Clear out the query parameters safely from the address bar for security polish
+                    if (accessToken) {
+                        window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+                    }
                 } else {
-                    if (error) console.error("Supabase User API Error Context:", error.message);
-                    throw new Error("Absent or invalid token match context.");
+                    throw new Error("No authenticated user profile could be retrieved.");
                 }
             } catch (err) {
                 console.error("Critical Authentication Pipeline Halt:", err);
