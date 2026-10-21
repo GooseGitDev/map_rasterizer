@@ -15,7 +15,11 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #dd731c; }
+<<<<<<< HEAD
+        canvas { border: 2px solid #333; background: #c084b3; }
+=======
+        canvas { border: 2px solid #333; background: #bbff00; }
+>>>>>>> parent of 39b9d0b (fixed a link issue)
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -43,8 +47,8 @@
         window.AUTH_TOKEN = "{{ token }}";
 
         // Initialize secure Supabase Client Instance
-        const SUPABASE_URL = "https://oztxnrrhbrgzzibfolmc.supabase.co"; 
-        const SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19yYT7neVpzxoKw_JQ665XFh";
+        const SUPABASE_URL = "https://supabase.co"; 
+        const SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19secretpzxoKw_JQ665XFh";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // Fetch UI DOM Element Bindings
