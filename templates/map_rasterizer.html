@@ -15,11 +15,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-<<<<<<< HEAD
-        canvas { border: 2px solid #333; background: #c084b3; }
-=======
-        canvas { border: 2px solid #333; background: #bbff00; }
->>>>>>> parent of 39b9d0b (fixed a link issue)
+        canvas { border: 2px solid #333; background: #8a57bb; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -40,84 +36,55 @@
     </div>
 
     <!-- Embed the secure verified runtime token directly as a global JS parameter variable object -->
-    <!-- Update the script block in map_rasterizer.html to this: -->
-    <!-- Update the script block at the bottom of map_rasterizer.html -->
     <script>
-        // 🟢 FIX A: Enclose the token in quotes so JavaScript parses it as a literal string
         window.AUTH_TOKEN = "{{ token }}";
 
-        // Initialize secure Supabase Client Instance
+        // 1. Initialize your specific secure Supabase Client Instance
         const SUPABASE_URL = "https://supabase.co"; 
         const SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19secretpzxoKw_JQ665XFh";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Fetch UI DOM Element Bindings
+        // 2. Fetch UI DOM Element Bindings
         const userBadge = document.getElementById('game-user-email');
         const gameLogoutBtn = document.getElementById('game-logout-btn');
         const homeBtn = document.getElementById('return-home-btn');
 
-        // Dynamic Environment Routing Controller Pipeline
+        // 3. Dynamic Environment Routing Controller Pipeline
         const currentHost = window.location.hostname;
         if (currentHost === "localhost" || currentHost === "127.0.0.1") {
-            homeBtn.href = "http://127.0.0.1:8080"; 
+            homeBtn.href = "http://127.0.0.1:8080"; // Local Landing Page Portal Port
         } else {
-            homeBtn.href = "https://onrender.com"; 
+            homeBtn.href = "https://landing-page-xlpu.onrender.com"; // Production Landing Page
         }
 
-        // Session Validation and Email Badge Render Execution
+        // 4. Session Validation and Email Badge Render Execution
         async function verifySession() {
-            try {
-                // 1. Scrape the secure hash fragment values directly out of the active browser bar
-                const hash = window.location.hash;
-                
-                if (hash && hash.includes('access_token')) {
-                    // Extract the base64 auth token string cleanly
-                    const params = new URLSearchParams(hash.replace('#', '?'));
-                    const parsedToken = params.get('access_token');
-                    
-                    if (parsedToken) {
-                        // 2. Hydrate the local storage scope environment with your authorization keys
-                        await supabaseClient.auth.setSession({
-                            access_token: parsedToken,
-                            refresh_token: "" 
-                        });
+            const { data: { user }, error } = await supabaseClient.auth.getUser();
 
-                        // Clean up the URL hash immediately for aesthetic polish and security
-                        window.history.replaceState(null, null, window.location.origin + window.location.pathname);
-                    }
-                }
-
-                // 3. Verify the final computed state against your Supabase instance
-                const { data: { user }, error } = await supabaseClient.auth.getUser();
-
-                if (user && !error) {
-                    // Success! Display verified email address badge context
-                    userBadge.innerText = user.email;
-                } else {
-                    throw new Error("Unauthorized or absent session token context.");
-                }
-            } catch (err) {
-                // Security Guard Enforced: Bounce bad traffic out to your portfolio hub portal
-                userBadge.innerText = "Auth Error: Redirecting...";
+            if (user && !error) {
+                // Let the user know they are checked in by printing their email address
+                userBadge.innerText = user.email;
+            } else {
+                // Handle missing or dead session states by bouncing them back to your hub portal
+                userBadge.innerText = "Auth Error: Session Expired";
                 userBadge.style.color = "#ff3333";
                 setTimeout(() => {
                     window.location.href = homeBtn.href;
-                }, 1200);
+                }, 1500);
             }
         }
 
-        // Cross-domain session sign-out event handler sequence
+        // 5. Cross-domain session sign-out event handler sequence
         gameLogoutBtn.addEventListener('click', async () => {
             userBadge.innerText = "Signing out...";
             await supabaseClient.auth.signOut();
+            // Drop them back to the active login panel once authentication tokens are dropped
             window.location.href = homeBtn.href;
         });
 
         // Run verification loop on initialization
         verifySession();
     </script>
-
-
     <script type="module" src="/static/js/map_rasterizer/mainClient.js"></script>
 </body>
 </html>
