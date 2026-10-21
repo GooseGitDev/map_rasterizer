@@ -15,7 +15,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #8a57bb; }
+        canvas { border: 2px solid #333; background: #ff0000; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -103,7 +103,8 @@
         if (currentHost === "localhost" || currentHost === "127.0.0.1") {
             homeBtn.href = "http://127.0.0.1:8080"; // Your local landing page portal address
         } else {
-            homeBtn.href = "https://onrender.com"; // Your live production dashboard address
+            // homeBtn.href = "https://onrender.com"; // Your live production dashboard address
+            homeBtn.href = "https://landing-page-xlpu.onrender.com"; // Production Landing Page
         }
 
         // Session Validation and Email Badge Render Execution
