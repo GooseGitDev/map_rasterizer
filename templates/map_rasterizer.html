@@ -15,7 +15,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #52a6df; }
+        canvas { border: 2px solid #333; background: #abce0e; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -176,19 +176,67 @@
             homeBtn.href = "https://landing-page-xlpu.onrender.com";
         }
 
+        // async function verifySession() {
+        //     try {
+        //         const hash = window.location.hash;
+                
+        //         if (hash && hash.includes('access_token')) {
+        //             const params = new URLSearchParams(hash.replace('#', '?'));
+        //             const parsedToken = params.get('access_token');
+                    
+        //             if (parsedToken) {
+        //                 // 🟢 Await the token injection operation securely
+        //                 const { data, error: setSessionError } = await supabaseClient.auth.setSession({
+        //                     access_token: parsedToken,
+        //                     refresh_token: "" 
+        //                 });
+
+        //                 if (setSessionError) throw setSessionError;
+
+        //                 // Give storage arrays a split second (100ms) to finalize write parameters
+        //                 await new Promise(resolve => setTimeout(resolve, 100));
+                        
+        //                 window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+        //             }
+        //         }
+
+        //         // Query profile metadata properties
+        //         const { data: { user }, error } = await supabaseClient.auth.getUser();
+
+        //         if (user && !error) {
+        //             userBadge.innerText = user.email;
+        //         } else {
+        //             if (error) console.error("Supabase User API Error Context:", error.message);
+        //             throw new Error("Absent or invalid token match context.");
+        //         }
+        //     } catch (err) {
+        //         // 🟢 Logs the true hidden security block out to your Inspector inspect console
+        //         console.error("Critical Authentication Pipeline Halt:", err);
+                
+        //         userBadge.innerText = "Auth Error: Redirecting...";
+        //         userBadge.style.color = "#ff3333";
+        //         setTimeout(() => {
+        //             window.location.href = homeBtn.href;
+        //         }, 1500);
+        //     }
+        // }
+
         async function verifySession() {
             try {
-                const hash = window.location.hash;
+                // 1. Strip the leading '#' cleanly using substring instead of a query token replacement
+                const hash = window.location.hash.substring(1);
                 
                 if (hash && hash.includes('access_token')) {
-                    const params = new URLSearchParams(hash.replace('#', '?'));
+                    // 2. Safely parse the raw key/value parameters natively
+                    const params = new URLSearchParams(hash);
                     const parsedToken = params.get('access_token');
+                    const parsedRefresh = params.get('refresh_token') || "";
                     
                     if (parsedToken) {
                         // 🟢 Await the token injection operation securely
                         const { data, error: setSessionError } = await supabaseClient.auth.setSession({
                             access_token: parsedToken,
-                            refresh_token: "" 
+                            refresh_token: parsedRefresh // Passing the refresh token keeps the webapp session alive long-term
                         });
 
                         if (setSessionError) throw setSessionError;
@@ -200,7 +248,7 @@
                     }
                 }
 
-                // Query profile metadata properties
+                // 3. Query profile metadata properties
                 const { data: { user }, error } = await supabaseClient.auth.getUser();
 
                 if (user && !error) {
@@ -220,6 +268,9 @@
                 }, 1500);
             }
         }
+
+
+
 
         gameLogoutBtn.addEventListener('click', async () => {
             userBadge.innerText = "Signing out...";
