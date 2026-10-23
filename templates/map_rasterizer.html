@@ -18,7 +18,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #00faaf; }
+        canvas { border: 2px solid #333; background: #085002; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -351,7 +351,7 @@
                 // Grok Fix #4: Securely calculate local vs production portal targets to avoid render.com bouncing loops
                 const localHome = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") 
                     ? "http://127.0.0.1:8080" 
-                    : "https://onrender.com";
+                    : "https://landing-page-xlpu.onrender.com";
 
                 userBadge.innerText = "Auth Error: Redirecting to Hub Portal...";
                 userBadge.style.color = "#ff3333";
