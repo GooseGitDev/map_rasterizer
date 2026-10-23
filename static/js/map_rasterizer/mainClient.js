@@ -146,20 +146,62 @@ export function initGame(user) {
     }
 
     // 3. Central Application Session Sign Out Mechanics Hook
+    // if (logoutBtn) {
+    //     logoutBtn.addEventListener('click', async (e) => {
+    //         e.preventDefault();
+    //         if (emailBadge) emailBadge.innerText = "Signing out...";
+            
+    //         // Invoke the master shared global storage clear execution call routines
+    //         if (window.supabaseClient) {
+    //             await window.supabaseClient.auth.signOut();
+    //         }
+            
+    //         // Redirect the window workspace cleanly back to your active portal landing port grid
+    //         window.location.href = localHome;
+    //     });
+    // }
+
+    // // Replace old logoutBtn click listener with this clean router forward:
+    // if (logoutBtn) {
+    //     logoutBtn.addEventListener('click', (e) => {
+    //         e.preventDefault();
+    //         if (emailBadge) emailBadge.innerText = "Cleaning session...";
+            
+    //         // Wipe local project storage token keys immediately
+    //         localStorage.clear(); 
+            
+    //         // Force navigate back home with a strict logout directive flag appended
+    //         window.location.href = localHome + "?action=logout";
+    //     });
+    // }
+
+    // 3. Central Application Session Sign Out Mechanics Hook
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async (e) => {
             e.preventDefault();
-            if (emailBadge) emailBadge.innerText = "Signing out...";
             
-            // Invoke the master shared global storage clear execution call routines
-            if (window.supabaseClient) {
-                await window.supabaseClient.auth.signOut();
+            // Immediately notify UI to prevent user from clicking links during cleanup loops
+            if (emailBadge) emailBadge.innerText = "Cleaning system pipeline...";
+            
+            try {
+                // Drop session permissions globally via Supabase's local controller definition block
+                if (window.supabaseClient) {
+                    await window.supabaseClient.auth.signOut();
+                }
+            } catch (err) {
+                console.warn("Storage sequence skipped or unmapped during network dump:", err);
             }
             
-            // Redirect the window workspace cleanly back to your active portal landing port grid
-            window.location.href = localHome;
+            // Clear all session cache keys bound to this project's origin domain
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Force break history allocation by shooting straight home with the logout parameter
+            window.location.replace(localHome + "?action=logout");
         });
     }
+
+
 
     // 4. Fire up Graphic Canvas Engine Context Layout Procedures
     if (canvas) {
