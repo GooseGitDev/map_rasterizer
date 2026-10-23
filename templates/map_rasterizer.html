@@ -1,3 +1,6 @@
+
+<template>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +18,7 @@
         .btn-home { background: #444; color: white; margin-right: 10px; }
         .btn-logout { background: #ff3333; color: white; }
         .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        canvas { border: 2px solid #333; background: #fa00c4; }
+        canvas { border: 2px solid #333; background: #00faaf; }
         #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
     </style>
 </head>
@@ -158,7 +161,7 @@
         verifySession();
     </script> -->
 
-    <!-- Corrected validation block inside templates/map_rasterizer.html -->
+
     <script>
         // const SUPABASE_URL = "https://oztsecretsmc.supabase.co"; 
         // const SUPABASE_URL = "https://supabase.co"; 
@@ -224,6 +227,234 @@
         //     }
         // }
 
+        // async function verifySession() {
+        //     try {
+        //         let accessToken = null;
+
+        //         // 1. Snatch the token from whichever method it arrived on
+        //         const urlParams = new URLSearchParams(window.location.search);
+        //         if (urlParams.has('token')) {
+        //             accessToken = urlParams.get('token');
+        //         } else if (window.location.hash) {
+        //             const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        //             accessToken = hashParams.get('access_token');
+        //         }
+
+        //         let userResponse = null;
+
+        //         // 2. Validate token directly via getUser if we caught one from the redirect parameter
+        //         if (accessToken) {
+        //             // We feed the accessToken straight into getUser to authenticate against the server directly
+        //             userResponse = await supabaseClient.auth.getUser(accessToken);
+                    
+        //             if (userResponse.error) {
+        //                 console.warn("Passed token validation failed:", userResponse.error.message);
+        //             } else if (userResponse.data.user) {
+        //                 // Success! Since the server validated it, we now save the session locally for future page reloads
+        //                 const parsedRefresh = urlParams.get('refresh_token') || "";
+        //                 await supabaseClient.auth.setSession({
+        //                     access_token: accessToken,
+        //                     refresh_token: parsedRefresh
+        //                 });
+        //             }
+        //         }
+
+        //         // 3. Fallback: If no redirect token was found, check if a local session already exists from a previous load
+        //         if (!userResponse || !userResponse.data.user) {
+        //             userResponse = await supabaseClient.auth.getUser();
+        //         }
+
+        //         // 4. Final verification check execution
+        //         if (userResponse.data && userResponse.data.user) {
+        //             // Success! Display verified email address badge context
+        //             userBadge.innerText = userResponse.data.user.email;
+                    
+        //             // Clear out the query parameters safely from the address bar for security polish
+        //             if (accessToken) {
+        //                 window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+        //             }
+        //         } else {
+        //             throw new Error("No authenticated user profile could be retrieved.");
+        //         }
+        //     } catch (err) {
+        //         console.error("Critical Authentication Pipeline Halt:", err);
+                
+        //         userBadge.innerText = "Auth Error: Redirecting...";
+        //         userBadge.style.color = "#ff3333";
+        //         setTimeout(() => {
+        //             window.location.href = homeBtn.href;
+        //         }, 1500);
+        //     }
+        // }
+
+        async function verifySession() {
+            try {
+                let accessToken = null;
+                let refreshToken = null;
+
+                // 1. Grok Fix #2: Read directly from window.location, matching both search (?) and hash (#) parameters safely
+                const urlString = window.location.href;
+                
+                // Extract token (handling both 'token' or Supabase's native 'access_token')
+                const tokenMatch = urlString.match(/[?&#](?:access_token|token)=([^&#]+)/);
+                if (tokenMatch && tokenMatch[1]) {
+                    accessToken = decodeURIComponent(tokenMatch[1]);
+                }
+
+                // Extract refresh token if it exists in the URL redirect payload
+                const refreshMatch = urlString.match(/[?&#]refresh_token=([^&#]+)/);
+                if (refreshMatch && refreshMatch[1]) {
+                    refreshToken = decodeURIComponent(refreshMatch[1]);
+                }
+
+                let userResponse = null;
+
+                // 2. Grok Fix #1: Only call setSession if we have a valid token payload incoming
+                if (accessToken) {
+                    // Build a valid session payload. If no refresh token came in, don't pass an empty string!
+                    const sessionPayload = {
+                        access_token: accessToken,
+                        refresh_token: refreshToken || undefined
+                    };
+
+                    // Injects the session data securely into browser memory layers
+                    const { data, error } = await supabaseClient.auth.setSession(sessionPayload);
+                    
+                    if (error) {
+                        console.warn("Inbound cross-domain token hydration failed:", error.message);
+                    } else if (data && data.user) {
+                        userResponse = { data: { user: data.user } };
+                    }
+                }
+
+                // 3. Fallback: If no redirect token was found, verify if a local storage session is already active
+                if (!userResponse || !userResponse.data || !userResponse.data.user) {
+                    userResponse = await supabaseClient.auth.getUser();
+                }
+
+                // 4. Grok Fix #5 & #6: Clear the address bar and lock in layout elements if successful
+                if (userResponse.data && userResponse.data.user) {
+                    userBadge.innerText = userResponse.data.user.email;
+                    
+                    // Wipe token metrics from address view bar cleanly so users don't see raw JWT hashes
+                    if (accessToken) {
+                        window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+                    }
+                    return; // Halt route logic execution — User is logged in securely!
+                } else {
+                    throw new Error("No authenticated user profile could be verified from token parameters or local storage.");
+                }
+
+            } catch (err) {
+                console.error("Critical Authentication Pipeline Halt:", err);
+                
+                // Grok Fix #4: Securely calculate local vs production portal targets to avoid render.com bouncing loops
+                const localHome = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") 
+                    ? "http://127.0.0.1:8080" 
+                    : "https://onrender.com";
+
+                userBadge.innerText = "Auth Error: Redirecting to Hub Portal...";
+                userBadge.style.color = "#ff3333";
+                
+                setTimeout(() => {
+                    window.location.href = localHome;
+                }, 1500);
+            }
+        }
+
+
+
+        gameLogoutBtn.addEventListener('click', async () => {
+            userBadge.innerText = "Signing out...";
+            await supabaseClient.auth.signOut();
+            window.location.href = homeBtn.href;
+        });
+
+        verifySession();
+    </script>
+
+
+
+    <script type="module" src="/static/js/map_rasterizer/mainClient.js"></script>
+</body>
+</html>
+
+
+
+</template>
+
+
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Rasterizer Engine</title>
+    <!-- Include Supabase script bundle so game engine front-end can process signouts cleanly -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { margin: 0; background: #121212; color: #fff; font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        header { background: #1e1e1e; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; }
+        .nav-brand { font-size: 18px; font-weight: bold; color: #00ffcc; }
+        .user-badge { font-size: 14px; background: #2a2a2a; padding: 6px 12px; border-radius: 4px; color: #aaa; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-decoration: none; font-size: 14px; }
+        .btn-home { background: #444; color: white; margin-right: 10px; }
+        .btn-logout { background: #ff3333; color: white; }
+        .game-zone { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        canvas { border: 2px solid #333; background: #00faaf; }
+        #status { margin-top: 10px; color: #00ffcc; font-size: 14px; }
+    </style>
+</head>
+<body>
+    
+    <header>
+        <div class="nav-brand">Project: map_rasterizer</div>
+        <div>
+            <span class="user-badge" id="game-user-email">Verifying Session Token...</span>
+            <a href="#" id="return-home-btn" class="btn btn-home">← Return Home Hub</a>
+            <button class="btn btn-logout" id="game-logout-btn">Log Out</button>
+        </div>
+    </header>
+
+    <div class="game-zone">
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div id="status">Network Engine Status: Connecting Socket Interface Pipeline...</div>
+    </div>
+
+
+
+<!-- 
+    <script>
+        // const SUPABASE_URL = "https://oztsecretsmc.supabase.co"; 
+        // const SUPABASE_URL = "https://supabase.co"; 
+        // const SUPABASE_URL = "https://oztxnrrhbrgzzibfolmc.supabase.co/rest/v1/";
+        const SUPABASE_URL = "https://oztxnrrhbrgzzibfolmc.supabase.co";
+        const SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19yYT7neVpzxoKw_JQ665XFh";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const userBadge = document.getElementById('game-user-email');
+        const gameLogoutBtn = document.getElementById('game-logout-btn');
+        const homeBtn = document.getElementById('return-home-btn');
+
+        const currentHost = window.location.hostname;
+        if (currentHost === "localhost" || currentHost === "127.0.0.1") {
+            homeBtn.href = "http://127.0.0.1:8080"; 
+        } else {
+            // homeBtn.href = "https://onrender.com"; 
+            homeBtn.href = "https://landing-page-xlpu.onrender.com";
+        }
+
+
+
         async function verifySession() {
             try {
                 let accessToken = null;
@@ -286,8 +517,6 @@
 
 
 
-
-
         gameLogoutBtn.addEventListener('click', async () => {
             userBadge.innerText = "Signing out...";
             await supabaseClient.auth.signOut();
@@ -295,10 +524,116 @@
         });
 
         verifySession();
+    </script> -->
+
+
+    <!-- 1. Inline Master Auth Synchronizer Script -->
+    <script>
+        console.log("🛠️ Master Inline Auth Synchronizer Script Active on Port 8000");
+
+        const REAL_SUPABASE_URL = "https://oztxnrrhbrgzzibfolmc.supabase.co";
+        const REAL_SUPABASE_ANON_KEY = "sb_publishable_umgeh3s19yYT7neVpzxoKw_JQ665XFh";
+        
+        window.supabaseClient = window.supabase.createClient(REAL_SUPABASE_URL, REAL_SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: false
+            }
+        });
+
+        async function verifyAndGetRawUser() {
+            try {
+                let accessToken = null;
+                let refreshToken = null;
+
+                // 1. Native Browser Hash Fragment Parser (#token=...&refresh_token=...)
+                if (window.location.hash) {
+                    const hashString = window.location.hash.substring(1);
+                    const hashParams = new URLSearchParams(hashString);
+                    accessToken = hashParams.get('token') || hashParams.get('access_token');
+                    refreshToken = hashParams.get('refresh_token');
+                }
+
+                // 2. Fallback Matcher: Check standard query parameter formats (?token=...)
+                if (!accessToken) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    accessToken = urlParams.get('token') || urlParams.get('access_token');
+                    refreshToken = urlParams.get('refresh_token');
+                }
+
+                if (accessToken) {
+                    console.log("[DEBUG] Clean token string found! Hydrating session layer manually...");
+                    
+                    // Core Fix: Provide a fallback structural string if refresh_token is missing.
+                    // This prevents the Supabase library from throwing "Auth session missing!".
+                    const { data, error } = await window.supabaseClient.auth.setSession({
+                        access_token: accessToken,
+                        refresh_token: refreshToken || "placeholder_local_refresh_token_string"
+                    });
+                    
+                    if (error) {
+                        console.error("Session hydration rejected:", error.message);
+                    } else {
+                        console.log("[DEBUG] Supabase session verified successfully.");
+                    }
+                    
+                    // Clear out the query parameters safely from the address bar for security polish
+                    window.history.replaceState(null, null, window.location.origin + window.location.pathname);
+                }
+
+                // Verify and extract the authentic user profile details
+                const { data: { user }, error: userError } = await window.supabaseClient.auth.getUser();
+                if (user && !userError) {
+                    return user;
+                }
+                return null;
+
+            } catch (err) {
+                console.error("HTML Master Auth Sync Error:", err);
+                return null;
+            }
+        }
+
+        window.AUTH_SYNC_PROMISE = verifyAndGetRawUser();
+    </script>
+
+    <!-- 2. Main Game Module Launcher -->
+    <script type="module">
+        // Bump cache-buster string to version 11 to override browser local history storage
+        import { initGame } from '/static/js/map_rasterizer/mainClient.js?v=11';
+
+        window.AUTH_SYNC_PROMISE.then((verifiedUser) => {
+            if (verifiedUser) {
+                console.log("[DEBUG] Passing verified user parameters down to game layout engine modules.");
+                initGame(verifiedUser);
+            } else {
+                console.error("❌ CRITICAL: Authentication check returned NULL. Page session is unauthenticated.");
+                document.getElementById('game-user-email').innerText = "Auth Error: Session Unverified";
+                document.getElementById('game-user-email').style.color = "#ff3333";
+            }
+        });
     </script>
 
 
 
-    <script type="module" src="/static/js/map_rasterizer/mainClient.js"></script>
+
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
