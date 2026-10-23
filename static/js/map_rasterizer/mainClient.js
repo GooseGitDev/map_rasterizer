@@ -123,7 +123,7 @@ export function initGame(user) {
     // 1. Dynamic Environment Target Home Path Calculation Loop
     const localHome = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") 
         ? "http://127.0.0.1:8080" 
-        : "https://onrender.com";
+        : "https://landing-page-xlpu.onrender.com";
 
     // Update the Return Home Hub button layout link so it functions accurately
     if (homeBtn) {
